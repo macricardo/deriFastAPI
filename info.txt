@@ -1,0 +1,4 @@
+routes = rutas o urls.
+models = modelos de datos (base de datos).
+schemas = definir que datos se reciben y devuelven. Especificar tipos de datos.
+config = configurar base de datos.
