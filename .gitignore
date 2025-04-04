@@ -8,3 +8,7 @@ fastapi-env/
 
 *.csv
 .vscode/
+
+*.db
+.github/copilot-instructions.md
+outputs/
