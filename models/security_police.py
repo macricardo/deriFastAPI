@@ -1,12 +1,10 @@
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from config.db import meta
-
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from config.db import Base
 
 class SecurityPolice(Base):
     __tablename__ = "security_police"
@@ -29,7 +27,7 @@ class SecurityPolice(Base):
     radio_id = Column(Integer, ForeignKey("radios.id"), nullable=True)
     turn_id = Column(Integer, ForeignKey("turns.id"), nullable=True)
     vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=True)
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=True)
+    zone_id = Column(Integer, ForeignKey("security_zone.id"), nullable=True)
     status_staff_id = Column(Integer, ForeignKey("status_staff.id"), nullable=True)
     is_chief = Column(Boolean, nullable=False)
     is_sergeant = Column(Boolean, nullable=False)
@@ -38,3 +36,5 @@ class SecurityPolice(Base):
     is_assignable = Column(Boolean, nullable=False)
     special_group_police_id = Column(Integer, ForeignKey("special_group_police.id"), nullable=True)
     last_tracking_location = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    zone = relationship("SecurityZone", back_populates="police_assigned")

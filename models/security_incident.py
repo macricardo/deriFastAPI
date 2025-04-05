@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, TIMESTAMP, Text
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from config.db import Base
 
-Base = declarative_base()
 
 class SecurityIncident(Base):
     __tablename__ = "security_incident"

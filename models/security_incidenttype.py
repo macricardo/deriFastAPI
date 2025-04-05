@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+from config.db import Base
+
 
 class SecurityIncidentType(Base):
     __tablename__ = "security_incidenttype"

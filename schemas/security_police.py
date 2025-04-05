@@ -21,7 +21,7 @@ class SecurityPoliceResponse(BaseModel):
     radio_id: Optional[int]
     turn_id: Optional[int]
     vehicle_id: Optional[int]
-    zone_id: Optional[int]
+    zone_name: Optional[str]  # Add this field to include only the name of the zone
     status_staff_id: Optional[int]
     is_chief: bool
     is_sergeant: bool
@@ -32,4 +32,4 @@ class SecurityPoliceResponse(BaseModel):
     last_tracking_location: Optional[datetime]
 
     class Config:
-        from_attributes = True  # Updated for Pydantic v2 compatibility
+        from_attributes = True  # Pydantic v2 compatibility

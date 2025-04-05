@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
-Base = declarative_base()
+from config.db import Base
 
 class SecurityZone(Base):
     __tablename__ = "security_zone"
@@ -22,3 +20,5 @@ class SecurityZone(Base):
     # Define relationships if needed
     # vectors = relationship("SecurityVector", back_populates="zone")
     # incidents = relationship("SecurityIncident", back_populates="zone")
+
+    police_assigned = relationship("SecurityPolice", back_populates="zone")
