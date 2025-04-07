@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from config.db import SessionLocal
 from models.security_statusincident import SecurityStatusIncident
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel
 
 # Define the response schema
@@ -24,20 +24,20 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/status_incidents", response_model=List[SecurityStatusIncidentResponse])
-def get_all_status_incidents(db: Session = Depends(get_db)):
+@router.get("/status_incidents", response_model=Dict[int, str])
+def get_status_id_name_mapping(db: Session = Depends(get_db)):
     """
-    Retrieve all status incidents from the database.
+    Retrieve a mapping of status_id to their corresponding names.
 
     Returns:
     --------
-    List[SecurityStatusIncidentResponse]
-        A list of all status incidents with their IDs and names.
+    Dict[int, str]
+        A dictionary where keys are status IDs and values are their names.
     """
     try:
         status_incidents = db.query(SecurityStatusIncident).all()
         if not status_incidents:
             raise HTTPException(status_code=404, detail="No status incidents found")
-        return status_incidents
+        return {incident.id: incident.name for incident in status_incidents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")

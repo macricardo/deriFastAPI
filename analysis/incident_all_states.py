@@ -61,9 +61,26 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
     # Calculate the percentage of time spent in each status
     total_time = status_time['time_spent'].sum()
     status_time['percentage'] = (status_time['time_spent'] / total_time) * 100
+
+    # Fetch the status_id to name mapping
+    try:
+        mapping_response = requests.get(f"{BASE_URL}/status_incidents")
+        mapping_response.raise_for_status()
+        status_id_name_mapping = mapping_response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error retrieving status ID to name mapping: {e}")
+        return {"error": f"Failed to retrieve status ID to name mapping: {str(e)}"}
+
+    # Ensure the status_id column and the keys in the mapping have the same type
+    status_time['status_id'] = status_time['status_id'].astype(str)  # Convert to string
+    status_id_name_mapping = {str(k): v for k, v in status_id_name_mapping.items()}  # Convert keys to string
+
+    # Replace status_id with the corresponding name in the DataFrame
+    status_time['status_name'] = status_time['status_id'].map(status_id_name_mapping)
+
+    print(status_id_name_mapping)
     print(status_time)
-    
-    # Generate the horizontal stacked bar chart
+
     # Generate the horizontal stacked bar chart
     plt.figure(figsize=(10, 6))
     plt.barh(
@@ -76,22 +93,20 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
 
     # Add labels for each segment
     for i, row in status_time.iterrows():
-        # Calculate the center position of the current segment
-        left_position = status_time['percentage'].iloc[:i].sum()  # Sum of all previous segments
-        center_position = left_position + (row['percentage'] / 2)  # Center of the current segment
+        left_position = status_time['percentage'].iloc[:i].sum()
+        center_position = left_position + (row['percentage'] / 2)
 
-        # Only add labels if the segment is wide enough
-        if row['percentage'] > 2:  # Skip labels for segments smaller than 5% of the total width
+        if row['percentage'] > 2:
             plt.text(
-                center_position,  # Horizontal position
-                0,  # Vertical position
-                f"{row['status_id']:.0f} ({row['time_spent']:.1f})",  # Label text
-                ha="center",  # Horizontal alignment
-                va="center",  # Vertical alignment
-                fontsize=10,  # Font size
-                color="white",  # Text color
-                weight="bold",  # Font weight
-                rotation=90  # Rotate the text vertically
+                center_position,
+                0,
+                f"{row['status_name']} ({row['time_spent']:.1f})",
+                ha="center",
+                va="center",
+                fontsize=10,
+                color="white",
+                weight="bold",
+                rotation=90
             )
 
     # Chart title and labels
