@@ -78,11 +78,10 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
     # Replace status_id with the corresponding name in the DataFrame
     status_time['status_name'] = status_time['status_id'].map(status_id_name_mapping)
 
-    print(status_id_name_mapping)
     print(status_time)
 
     # Generate the horizontal stacked bar chart
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))  # Adjusted figure size to accommodate the table
     plt.barh(
         y=["Status Time"], 
         width=status_time['percentage'], 
@@ -113,6 +112,26 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
     plt.title(f"Time Distribution Across Statuses for Incident {incident_id}", fontsize=14)
     plt.xlabel("Percentage of Total Time (%)", fontsize=12)
     plt.ylabel("Incident Status", fontsize=12)
+
+    # Add the table below the chart
+    table_data = status_time[['status_name', 'time_spent', 'percentage']].copy()
+    table_data['time_spent'] = table_data['time_spent'].apply(lambda x: f"{x:.1f} s")  # Format time_spent
+    table_data['percentage'] = table_data['percentage'].apply(lambda x: f"{x:.1f} %")  # Format percentage
+
+    # Convert the DataFrame to a list of lists for the table
+    table_data_list = table_data.values.tolist()
+    column_labels = ['Status Name', 'Time Spent', 'Percentage']
+
+    # Add the table to the plot
+    plt.table(
+        cellText=table_data_list,
+        colLabels=column_labels,
+        cellLoc='center',
+        loc='bottom',
+        bbox=[0.0, -0.4, 1.0, 0.3]  # Adjust position and size of the table
+    )
+
+    plt.subplots_adjust(bottom=0.3)  # Adjust the bottom margin to fit the table
     plt.tight_layout()
 
     # Save the plot
