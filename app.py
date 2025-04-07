@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from fastapi.responses import ORJSONResponse
 from routes.security_police import router as security_police_router
 from routes.security_incident import router as security_incident_router
+from routes.security_incidenttrackingstate import router as incident_tracking_router
+
 import orjson
 
 class PrettyORJSONResponse(ORJSONResponse):
@@ -14,6 +16,8 @@ app = FastAPI(default_response_class=PrettyORJSONResponse)
 # Include the security_police router
 app.include_router(security_police_router, prefix="/api")
 app.include_router(security_incident_router, prefix="/api")
+
+app.include_router(incident_tracking_router, prefix="/api")
 
 
 
