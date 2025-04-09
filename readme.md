@@ -1,7 +1,3 @@
-Here is the text content for the `README.md` file in Spanish. You can copy and paste it directly into your file:
-
----
-
 # Proyecto FastAPI
 
 Este es un proyecto estándar de FastAPI que utiliza PostgreSQL como base de datos. Los modelos, esquemas, rutas y el archivo app.py tienen sus funcionalidades básicas implementadas para manejar la lógica de la API.
@@ -28,13 +24,13 @@ python analysis/police_all_incidents.py <police_id>
 ---
 
 ### 2. Analizar el tiempo transcurrido en los diferentes estados de un incidente
-Este análisis permite entender cuánto tiempo tomó atender un incidente, desglosado por los diferentes estados del incidente. El script ubicado en incident_all_states.py realiza este análisis de manera independiente, consultando dos rutas de la API y procesando los datos internamente. Para ejecutar este análisis, utiliza el siguiente comando:
+Este análisis permite entender cuánto tiempo tomó atender un incidente, desglosado por los diferentes estados del incidente. El script ubicado en incident_all_states.py realiza este análisis de manera independiente, consultando dos rutas de la API (para realizar el mapeo de IDs con sus nombres) y procesando los datos internamente. Para ejecutar este análisis, utiliza el siguiente comando:
 
 ```bash
 python analysis/incident_all_states.py <incident_id>
 ```
 
-El script genera gráficos que se guardan en el directorio de salida especificado.
+El script genera gráficos que se guardan en el directorio "output" especificado.
 
 #### Ejemplo de Gráficos Generados:
 ![Análisis Incidente ID 1884](readme/incident_1884_status_analysis_20250409_145056.png)
