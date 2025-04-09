@@ -2,20 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from config.db import SessionLocal
 from models.security_incidenttrackingstate import SecurityIncidentTrackingState
+from schemas.security_incidenttrackingstate import SecurityIncidentTrackingStateResponse  # Import schema
 from typing import List
-from pydantic import BaseModel
-from datetime import datetime
-
-# Define the response schema
-class SecurityIncidentTrackingStateResponse(BaseModel):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-    incident_id: int
-    status_id: int
-
-    class Config:
-        from_attributes = True  # Pydantic v2 compatibility
 
 # Create the router
 router = APIRouter()

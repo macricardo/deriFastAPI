@@ -7,89 +7,93 @@ import os
 import json
 from typing import Dict, List, Any, Optional
 
-BASE_URL = "http://localhost:8000/api"  # Adjust if your API is hosted elsewhere
+BASE_URL = "http://localhost:8000/api"  # URL de la API.
 
 def analyze_police_incidents(police_id: int, output_dir: str = "./outputs") -> Dict[str, Any]:
     """
-    Retrieve and analyze all incidents for a specific police officer.
+    Recupera y analiza todos los incidentes de un oficial de policía específico.
+
+    Se ejecuta:
+    -----------
+    python analysis/police_all_incidents.py <police_id>
     
-    Parameters:
+    Parámetros:
     -----------
     police_id : int
-        The ID of the police officer to analyze
+        El ID del oficial de policía a analizar.
     output_dir : str
-        Directory to save generated plots (default: "./outputs")
+        Directorio donde se guardarán las gráficas generadas (por defecto: "./outputs").
         
     Returns:
     --------
     Dict[str, Any]
-        Analysis results including summary statistics and plots
+        Resultados del análisis, incluyendo estadísticas resumidas y gráficas.
     """
-    # Ensure output directory exists
+    # Asegurarse de que el directorio de salida exista
     os.makedirs(output_dir, exist_ok=True)
     
-    # Get police officer details
+    # Obtener detalles del oficial de policía
     try:
         police_response = requests.get(f"{BASE_URL}/security_police/{police_id}")
         police_response.raise_for_status()
         police_data = police_response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving police officer data: {e}")
-        return {"error": f"Failed to retrieve police officer data: {str(e)}"}
+        print(f"Error al recuperar datos del oficial de policía: {e}")
+        return {"error": f"No se pudieron recuperar los datos del oficial de policía: {str(e)}"}
     
-    # Get all incidents for this police officer
+    # Obtener todos los incidentes de este oficial de policía
     try:
         incidents_response = requests.get(f"{BASE_URL}/security_incident/police/{police_id}/analysis")
         incidents_response.raise_for_status()
         analysis_data = incidents_response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving incidents: {e}")
-        return {"error": f"Failed to retrieve incident data: {str(e)}"}
+        print(f"Error al recuperar incidentes: {e}")
+        return {"error": f"No se pudieron recuperar los datos de los incidentes: {str(e)}"}
     
-    # Extract data for processing
+    # Extraer datos para el procesamiento
     incidents = pd.DataFrame(analysis_data["incidents"])
     summary_stats = analysis_data["summary_statistics"]
     
-    # Process attention times
+    # Procesar tiempos de atención
     def time_to_seconds(time_str):
         if time_str is None or time_str == "null" or pd.isna(time_str):
             return np.nan
         
         if isinstance(time_str, str) and ":" in time_str:
-            # Format: "HH:MM:SS"
+            # Formato: "HH:MM:SS"
             parts = time_str.split(":")
             if len(parts) == 3:
                 h, m, s = map(int, parts)
                 return h * 3600 + m * 60 + s
         
-        # Try to convert as float
+        # Intentar convertir como flotante
         try:
             return float(time_str)
         except (ValueError, TypeError):
             return np.nan
     
-    # Process attention times into seconds for analysis
+    # Procesar tiempos de atención en segundos para el análisis
     incidents['attention_time_seconds'] = incidents['attention_time'].apply(time_to_seconds)
     
-    # Filter out NaN values for plotting
+    # Filtrar valores NaN para graficar
     plot_data = incidents.dropna(subset=['attention_time_seconds'])
     
     if plot_data.empty:
-        print("No valid attention time data to plot")
+        print("No hay datos válidos de tiempo de atención para graficar")
         return {
             "police_id": police_id,
-            "error": "No valid attention time data to plot",
+            "error": "No hay datos válidos de tiempo de atención para graficar",
             "summary": summary_stats
         }
     
-    # Create figure with two subplots (larger size for better visibility)
+    # Crear figura con dos subgráficas (tamaño más grande para mejor visibilidad)
     plt.figure(figsize=(16, 10))
     
-    # Calculate statistics for valid data
+    # Calcular estadísticas para datos válidos
     mean_time = plot_data['attention_time_seconds'].mean()
     median_time = plot_data['attention_time_seconds'].median()
     
-    # Plot 1: Vertical bar chart of attention times
+    # Gráfica 1: Gráfico de barras vertical de tiempos de atención
     plt.subplot(2, 1, 1)
     bars = plt.bar(
         plot_data['incident_id'].astype(str), 
@@ -98,47 +102,47 @@ def analyze_police_incidents(police_id: int, output_dir: str = "./outputs") -> D
         alpha=0.7
     )
     
-    # Add horizontal line for average
+    # Agregar línea horizontal para el promedio
     plt.axhline(y=mean_time, color='r', linestyle='-', 
-                label=f'Mean: {mean_time/60:.2f} minutes')
+                label=f'Promedio: {mean_time/60:.2f} minutos')
     plt.axhline(y=median_time, color='g', linestyle='--', 
-                label=f'Median: {median_time/60:.2f} minutes')
+                label=f'Mediana: {median_time/60:.2f} minutos')
     
-    # Title with officer information
-    officer_title = (f"Police ID: {police_id}" +
-                    f" | Grade: {police_data.get('grade', 'Unknown')}" +
-                    f" | Incidents: {len(incidents)}")
+    # Título con información del oficial
+    officer_title = (f"ID Policía: {police_id}" +
+                    f" | Grado: {police_data.get('grade', 'Desconocido')}" +
+                    f" | Incidentes: {len(incidents)}")
     
-    plt.title(f"Attention Times Analysis\n{officer_title}", fontsize=14)
-    plt.ylabel("Attention Time (seconds)", fontsize=12)
-    plt.xlabel("Incident ID", fontsize=12)
+    plt.title(f"Análisis de Tiempos de Atención\n{officer_title}", fontsize=14)
+    plt.ylabel("Tiempo de Atención (segundos)", fontsize=12)
+    plt.xlabel("ID del Incidente", fontsize=12)
     plt.xticks(rotation=90, fontsize=8)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend()
     
-    # Plot 2: Attention time by vector (if vector data is available)
+    # Gráfica 2: Tiempo de atención por vector (si los datos de vector están disponibles)
     plt.subplot(2, 1, 2)
     
-    # Group by vector_id and calculate mean attention time
+    # Agrupar por vector_id y calcular tiempo promedio de atención
     if 'vector_id' in plot_data.columns and not plot_data['vector_id'].isna().all():
-        # Fill NaN vector_id with "Unknown" for analysis purposes
-        plot_data['vector_id'] = plot_data['vector_id'].fillna('Unknown')
+        # Rellenar vector_id NaN con "Desconocido" para propósitos de análisis
+        plot_data['vector_id'] = plot_data['vector_id'].fillna('Desconocido')
         
         vector_analysis = plot_data.groupby('vector_id')['attention_time_seconds'].agg(['mean', 'count']).reset_index()
         
-        # Sort by highest mean time
+        # Ordenar por el tiempo promedio más alto
         vector_analysis = vector_analysis.sort_values('mean', ascending=False)
         
-        # Plot bars with count-based width for visual emphasis
+        # Graficar barras con ancho basado en el conteo para énfasis visual
         plt.bar(
             vector_analysis['vector_id'].astype(str), 
             vector_analysis['mean'],
             alpha=0.7,
-            width=0.6,  # Fixed width for better readability
+            width=0.6,  # Ancho fijo para mejor legibilidad
             color='lightgreen'
         )
         
-        # Add count labels on top of bars
+        # Agregar etiquetas de conteo encima de las barras
         for i, (_, row) in enumerate(vector_analysis.iterrows()):
             plt.text(
                 i, row['mean'] + 5, 
@@ -147,30 +151,30 @@ def analyze_police_incidents(police_id: int, output_dir: str = "./outputs") -> D
                 fontsize=9
             )
             
-        plt.title("Average Attention Time by Vector", fontsize=14)
-        plt.ylabel("Mean Attention Time (seconds)", fontsize=12)
-        plt.xlabel("Vector ID", fontsize=12)
+        plt.title("Tiempo Promedio de Atención por Vector", fontsize=14)
+        plt.ylabel("Tiempo Promedio de Atención (segundos)", fontsize=12)
+        plt.xlabel("ID del Vector", fontsize=12)
         plt.grid(axis='y', linestyle='--', alpha=0.7)
     else:
-        plt.text(0.5, 0.5, "No vector data available", ha='center', va='center', fontsize=14)
+        plt.text(0.5, 0.5, "No hay datos de vector disponibles", ha='center', va='center', fontsize=14)
         plt.axis('off')
     
-    # Tight layout and save figure
+    # Ajustar diseño y guardar figura
     plt.tight_layout()
     
-    # Save plot to file
+    # Guardar gráfica en archivo
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     plot_filename = f"{output_dir}/police_id_{police_id}_analysis_{timestamp}.png"
     plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"Analysis complete. Plot saved to {plot_filename}")
+    print(f"Análisis completo. Gráfica guardada en {plot_filename}")
     
-    # Return analysis results
+    # Retornar resultados del análisis
     return {
         "police_id": police_id,
         "officer_info": {
-            "grade": police_data.get("grade", "Unknown"),
+            "grade": police_data.get("grade", "Desconocido"),
             "is_supervisor": police_data.get("is_supervisor", False),
         },
         "plot_path": plot_filename,
@@ -180,7 +184,7 @@ def analyze_police_incidents(police_id: int, output_dir: str = "./outputs") -> D
     }
 
 if __name__ == "__main__":
-    # Example usage
+    # Ejemplo de uso
     import sys
     
     if len(sys.argv) > 1:
@@ -188,12 +192,12 @@ if __name__ == "__main__":
             police_id = int(sys.argv[1])
             analyze_police_incidents(police_id)
         except ValueError:
-            print("Error: Police ID must be an integer")
+            print("Error: El ID de policía debe ser un número entero")
             sys.exit(1)
     else:
-        # Interactive mode
+        # Modo interactivo
         try:
-            police_id = int(input("Enter police ID to analyze: "))
+            police_id = int(input("Ingrese el ID del policía a analizar: "))
             analyze_police_incidents(police_id)
         except ValueError:
-            print("Error: Police ID must be an integer")
+            print("Error: El ID de policía debe ser un número entero")

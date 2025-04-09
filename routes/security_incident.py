@@ -26,7 +26,7 @@ def get_db():
 @router.get("/security_incident/{id}", response_model=SecurityIncidentResponse)
 def get_security_incident_by_id(id: int, db: Session = Depends(get_db)):
     """
-    Retrieve a security incident by its ID.
+    Regresa toda la información de un security_incident por su ID.
     
     Parameters:
     - id: The ID of the security incident to retrieve
@@ -51,7 +51,7 @@ def get_police_incidents(
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve all security incidents assigned to a specific police officer.
+    Regresa todos los security_incidents asignados a un policía específico (por su police_id).
     
     Parameters:
     - police_id: The ID of the police officer
@@ -86,8 +86,8 @@ def analyze_police_incidents(
     db: Session = Depends(get_db)
 ):
     """
-    Analyze incidents assigned to a specific police officer and return statistics
-    with attention time analysis.
+    Regresa un análisis de los security_incidents asignados a un policía específico (por su police_id).
+    Este análisis incluye estadísticas de tiempo de atención y distribución de estados.
     
     Parameters:
     - police_id: The ID of the police officer
@@ -98,7 +98,7 @@ def analyze_police_incidents(
         - attention time average
         - incident details
     """
-    # Query all incidents for this police officer (no limit for analysis)
+    # Query all incidents for this police officer (NO LIMIT for analysis)
     incidents = db.query(SecurityIncident)\
                   .filter(SecurityIncident.police_id == police_id)\
                   .all()
@@ -147,7 +147,7 @@ def analyze_police_incidents(
     # Calculate statistics (ignoring NaN values)
     avg_attention_time_seconds = df['attention_time_seconds'].mean()
     
-    # Format time stats
+    # Cambio de formato del tiempo.
     def format_seconds_to_time(seconds):
         if pd.isna(seconds):
             return "00:00:00"
@@ -156,7 +156,7 @@ def analyze_police_incidents(
         minutes, seconds = divmod(remainder, 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
     
-    # Create summary statistics
+    # Cre resumen.
     summary_stats = {
         "total_incidents": len(df),
         "average_attention_time_seconds": float(avg_attention_time_seconds) if not pd.isna(avg_attention_time_seconds) else 0,
@@ -166,16 +166,16 @@ def analyze_police_incidents(
         "median_attention_time_seconds": float(df['attention_time_seconds'].median()) if not pd.isna(df['attention_time_seconds'].median()) else 0
     }
     
-    # Add percentile statistics for more detailed analysis
+    # Estadísticos percentiles
     percentiles = [25, 50, 75, 90, 95]
     for p in percentiles:
         percentile_value = df['attention_time_seconds'].quantile(p/100)
         summary_stats[f"p{p}_attention_time_seconds"] = float(percentile_value) if not pd.isna(percentile_value) else 0
     
-    # Calculate count of incidents by status_id for analysis
+    # Conteo de incidentes.
     status_counts = df['status_id'].value_counts().to_dict()
     
-    # Calculate zone-based statistics
+    # Calculos por zona.
     zone_stats = {}
     for zone in df['zone_id'].dropna().unique():
         zone_df = df[df['zone_id'] == zone]
@@ -186,7 +186,7 @@ def analyze_police_incidents(
             "avg_attention_time_formatted": format_seconds_to_time(zone_avg_time)
         }
     
-    # Return results with detailed analysis
+    # Return results
     return {
         "police_id": police_id,
         "summary_statistics": summary_stats,

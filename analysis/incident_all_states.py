@@ -5,13 +5,19 @@ from datetime import datetime
 import os
 from typing import Dict, Any
 
-BASE_URL = "http://localhost:8000/api"  # Adjust if your API is hosted elsewhere
+BASE_URL = "http://localhost:8000/api"  
 
 def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> Dict[str, Any]:
     """
-    Analyze the time spent in each status for a given incident and generate a horizontal stacked bar chart.
+    Analiza el tiempo transcurrido en cada status en cierto incidente.
+    Genera una gráfica de barras apiladas horizontalmente que muestra la distribución del tiempo.
+    Además, incluye una tabla con el tiempo total y el porcentaje de tiempo en cada status.
 
-    Parameters:
+    Se ejecuta:
+    -----------
+    python analysis/incident_all_states.py <incident_id>
+    
+    Parámetros:
     -----------
     incident_id : int
         The ID of the incident to analyze.
@@ -26,7 +32,7 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    # Query the API to get tracking states for the given incident_id
+    # Query API para obtener lista de tracking states del incident_id.
     try:
         response = requests.get(f"{BASE_URL}/incident_tracking_states/{incident_id}")
         response.raise_for_status()
@@ -35,34 +41,34 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
         print(f"Error retrieving tracking states: {e}")
         return {"error": f"Failed to retrieve tracking states: {str(e)}"}
 
-    # Extract only the fields we need: status_id and created_at
+    # Tomamos solo los campos reuqeridos: status_id and created_at
     data = [{"status_id": item["status_id"], "created_at": item["created_at"]} for item in tracking_states]
 
-    # Convert the data to a DataFrame
+    # Conveierte datos a Pandas DataFrame.
     df = pd.DataFrame(data)
 
-    # Ensure there are tracking states to analyze
+    # Revisamos que no esté vacío el DataFrame.
     if df.empty:
         print(f"No tracking states found for incident_id {incident_id}")
         return {"error": f"No tracking states found for incident_id {incident_id}"}
 
-    # Convert created_at to datetime and sort by it
+    # Convertimos created_at a datetime y ordenamos.
     df['created_at'] = pd.to_datetime(df['created_at'])
     df = df.sort_values(by='created_at')
 
-# Calculate the time spent in each status using the next row's created_at
+# Calculamos el tiempo transcurrido en cada status.
     df['time_spent'] = df['created_at'].shift(-1) - df['created_at']
     df['time_spent'] = df['time_spent'].dt.total_seconds()  # Convert timedelta to seconds
     df['time_spent'] = df['time_spent'].fillna(0)  # Fill NaN for the last row with 0
 
-    # Group by status_id and calculate total time spent in each status
+    # Calculamos tiempo total.
     status_time = df.groupby('status_id')['time_spent'].sum().reset_index()
 
-    # Calculate the percentage of time spent in each status
+    # Calculamos porcentajes.
     total_time = status_time['time_spent'].sum()
     status_time['percentage'] = (status_time['time_spent'] / total_time) * 100
 
-    # Fetch the status_id to name mapping
+    # Hacemos otro query a la API para obtener el mapping de status_id a status_name.
     try:
         mapping_response = requests.get(f"{BASE_URL}/status_incidents")
         mapping_response.raise_for_status()
@@ -71,16 +77,17 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
         print(f"Error retrieving status ID to name mapping: {e}")
         return {"error": f"Failed to retrieve status ID to name mapping: {str(e)}"}
 
-    # Ensure the status_id column and the keys in the mapping have the same type
+    # Revisamos que el mapping sea obtenido.
     status_time['status_id'] = status_time['status_id'].astype(str)  # Convert to string
     status_id_name_mapping = {str(k): v for k, v in status_id_name_mapping.items()}  # Convert keys to string
 
-    # Replace status_id with the corresponding name in the DataFrame
+    # Remplazamos el status_id por el status_name.
     status_time['status_name'] = status_time['status_id'].map(status_id_name_mapping)
 
+    #Imprimimos la tabla final en la consola.
     print(status_time)
 
-    # Generate the horizontal stacked bar chart
+    # Generamos la gráfica.
     plt.figure(figsize=(12, 8))  # Adjusted figure size to accommodate the table
     plt.barh(
         y=["Status Time"], 
@@ -90,7 +97,7 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
         edgecolor="black"
     )
 
-    # Add labels for each segment
+    # Agregamos labels.
     for i, row in status_time.iterrows():
         left_position = status_time['percentage'].iloc[:i].sum()
         center_position = left_position + (row['percentage'] / 2)
@@ -118,11 +125,11 @@ def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> 
     table_data['time_spent'] = table_data['time_spent'].apply(lambda x: f"{x:.1f} s")  # Format time_spent
     table_data['percentage'] = table_data['percentage'].apply(lambda x: f"{x:.1f} %")  # Format percentage
 
-    # Convert the DataFrame to a list of lists for the table
+    # Convertimos dataframe a lista para la tabla.
     table_data_list = table_data.values.tolist()
     column_labels = ['Status Name', 'Time Spent', 'Percentage']
 
-    # Add the table to the plot
+    # Agregamos la tabla a la gráfica.
     plt.table(
         cellText=table_data_list,
         colLabels=column_labels,

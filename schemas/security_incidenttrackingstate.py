@@ -9,10 +9,13 @@ class SecurityIncidentTrackingStateBase(BaseModel):
 class SecurityIncidentTrackingStateCreate(SecurityIncidentTrackingStateBase):
     pass
 
-class SecurityIncidentTrackingStateResponse(SecurityIncidentTrackingStateBase):
+# Define the response schema
+class SecurityIncidentTrackingStateResponse(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime
+    incident_id: int
+    status_id: int
 
     class Config:
         from_attributes = True  # Pydantic v2 compatibility
