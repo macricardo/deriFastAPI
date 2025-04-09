@@ -50,5 +50,3 @@ El script genera gráficos que se guardan en el directorio "output" especificado
 - **Scikit-learn**: Herramientas adicionales para análisis de datos.
 
 ---
-
-Copia este contenido en tu archivo `README.md`. Si necesitas más ayuda, no dudes en pedírmelo.
