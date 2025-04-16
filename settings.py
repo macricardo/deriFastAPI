@@ -30,5 +30,7 @@ class Settings(BaseSettings):
         return f"postgresql://{encoded_user}:{encoded_password}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 
+    API_URL: str = os.getenv("API_URL", "http://localhost:8000/api")
+
 # Instantiate settings
 settings = Settings()

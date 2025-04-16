@@ -4,8 +4,16 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 from typing import Dict, Any
+import sys
+from pathlib import Path
 
-BASE_URL = "http://localhost:8000/api"  
+# Add the project root to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
+
+from settings import settings  # Import settings
+
+BASE_URL = settings.API_URL   # URL de la API.
 
 def analyze_incident_states(incident_id: int, output_dir: str = "./outputs") -> Dict[str, Any]:
     """

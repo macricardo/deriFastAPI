@@ -7,7 +7,16 @@ import os
 import json
 from typing import Dict, List, Any, Optional
 
-BASE_URL = "http://localhost:8000/api"  # URL de la API.
+import sys
+from pathlib import Path
+
+# Add the project root to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
+
+from settings import settings  # Import settings
+
+BASE_URL = settings.API_URL   # URL de la API.
 
 def analyze_police_incidents(police_id: int, output_dir: str = "./outputs") -> Dict[str, Any]:
     """

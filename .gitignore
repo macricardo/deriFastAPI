@@ -13,3 +13,4 @@ fastapi-env/
 *.db
 .github/copilot-instructions.md
 outputs/
+analysis/outputs/

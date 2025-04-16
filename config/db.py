@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import declarative_base, sessionmaker
-from config.settings import settings  # Import settings
+from settings import settings  # Import settings
 
 # Database connection
 DATABASE_URL = settings.DATABASE_URL 
