@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import declarative_base, sessionmaker
+from config.settings import settings  # Import settings
 
 # Database connection
-DATABASE_URL = "postgresql://deridb:Abcd1234%@localhost:5432/deridb"
+DATABASE_URL = settings.DATABASE_URL 
 engine = create_engine(DATABASE_URL)
 
 # Metadata and Base
@@ -12,7 +13,7 @@ Base = declarative_base()
 # Import all models to register them with Base
 from models import *  # Import all models from the models package
 
-# Create tables
+# Create (bind) tablas
 Base.metadata.create_all(bind=engine)
 
 # Session management

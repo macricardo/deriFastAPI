@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .venv/
 fastapi-env/
+.env
 
 *.csv
 .vscode/
