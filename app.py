@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy.orm import relationship
 from fastapi.responses import ORJSONResponse
+from fastapi.staticfiles import StaticFiles
 from routes.security_police import router as security_police_router
 from routes.security_incident import router as security_incident_router
 from routes.security_incidenttrackingstate import router as incident_tracking_router
@@ -20,3 +21,4 @@ app.include_router(security_incident_router, prefix="/api")
 app.include_router(incident_tracking_router, prefix="/api")
 app.include_router(status_incident_router, prefix="/api")
 
+app.mount("/static", StaticFiles(directory="."), name="static")

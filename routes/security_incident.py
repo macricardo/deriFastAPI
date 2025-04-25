@@ -9,6 +9,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, time
 import re
+import os
+from fastapi.responses import JSONResponse
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 # Create a session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -87,7 +91,7 @@ def analyze_police_incidents(
 ):
     """
     Regresa un análisis de los security_incidents asignados a un policía específico (por su police_id).
-    Este análisis incluye estadísticas de tiempo de atención y distribución de estados.
+    Este análisis incluye estadísticas de tiempo de atención, distribución de estados y un gráfico generado.
     
     Parameters:
     - police_id: The ID of the police officer
@@ -97,6 +101,7 @@ def analyze_police_incidents(
         - summary statistics
         - attention time average
         - incident details
+        - URL to the generated image
     """
     # Query all incidents for this police officer (NO LIMIT for analysis)
     incidents = db.query(SecurityIncident)\
@@ -144,53 +149,80 @@ def analyze_police_incidents(
     # Apply conversion and handle NaN values
     df['attention_time_seconds'] = df['attention_time'].apply(time_to_seconds)
     
-    # Calculate statistics (ignoring NaN values)
-    avg_attention_time_seconds = df['attention_time_seconds'].mean()
+    # Filter valid data for plotting
+    plot_data = df.dropna(subset=['attention_time_seconds'])
+    if plot_data.empty:
+        raise HTTPException(
+            status_code=400,
+            detail="No valid attention time data available for analysis."
+        )
     
-    # Cambio de formato del tiempo.
-    def format_seconds_to_time(seconds):
-        if pd.isna(seconds):
-            return "00:00:00"
-        
-        hours, remainder = divmod(int(seconds), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    # Calculate statistics
+    avg_attention_time_seconds = plot_data['attention_time_seconds'].mean()
+    median_attention_time_seconds = plot_data['attention_time_seconds'].median()
     
-    # Cre resumen.
-    summary_stats = {
-        "total_incidents": len(df),
-        "average_attention_time_seconds": float(avg_attention_time_seconds) if not pd.isna(avg_attention_time_seconds) else 0,
-        "average_attention_time_formatted": format_seconds_to_time(avg_attention_time_seconds),
-        "min_attention_time_seconds": float(df['attention_time_seconds'].min()) if not pd.isna(df['attention_time_seconds'].min()) else 0,
-        "max_attention_time_seconds": float(df['attention_time_seconds'].max()) if not pd.isna(df['attention_time_seconds'].max()) else 0,
-        "median_attention_time_seconds": float(df['attention_time_seconds'].median()) if not pd.isna(df['attention_time_seconds'].median()) else 0
-    }
+    # Create output directory for plots
+    output_dir = "./analysis/police_all_incidents"
+    os.makedirs(output_dir, exist_ok=True)
     
-    # Estadísticos percentiles
-    percentiles = [25, 50, 75, 90, 95]
-    for p in percentiles:
-        percentile_value = df['attention_time_seconds'].quantile(p/100)
-        summary_stats[f"p{p}_attention_time_seconds"] = float(percentile_value) if not pd.isna(percentile_value) else 0
+    # Generate the plot
+    plt.figure(figsize=(16, 10))
     
-    # Conteo de incidentes.
-    status_counts = df['status_id'].value_counts().to_dict()
+    # Plot 1: Attention time per incident
+    plt.subplot(2, 1, 1)
+    plt.bar(
+        plot_data['incident_id'].astype(str),
+        plot_data['attention_time_seconds'],
+        color='skyblue',
+        alpha=0.7
+    )
+    plt.axhline(y=avg_attention_time_seconds, color='r', linestyle='-', label=f'Promedio: {avg_attention_time_seconds/60:.2f} minutos')
+    plt.axhline(y=median_attention_time_seconds, color='g', linestyle='--', label=f'Mediana: {median_attention_time_seconds/60:.2f} minutos')
+    plt.title(f"Análisis de Tiempos de Atención para Policía ID {police_id}", fontsize=14)
+    plt.ylabel("Tiempo de Atención (segundos)", fontsize=12)
+    plt.xlabel("ID del Incidente", fontsize=12)
+    plt.xticks(rotation=90, fontsize=8)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend()
     
-    # Calculos por zona.
-    zone_stats = {}
-    for zone in df['zone_id'].dropna().unique():
-        zone_df = df[df['zone_id'] == zone]
-        zone_avg_time = zone_df['attention_time_seconds'].mean()
-        zone_stats[str(int(zone))] = {
-            "count": len(zone_df),
-            "avg_attention_time_seconds": float(zone_avg_time) if not pd.isna(zone_avg_time) else 0,
-            "avg_attention_time_formatted": format_seconds_to_time(zone_avg_time)
-        }
+    # Plot 2: Average attention time by vector
+    plt.subplot(2, 1, 2)
+    if 'vector_id' in plot_data.columns and not plot_data['vector_id'].isna().all():
+        plot_data['vector_id'] = plot_data['vector_id'].fillna('Desconocido')
+        vector_analysis = plot_data.groupby('vector_id')['attention_time_seconds'].agg(['mean', 'count']).reset_index()
+        vector_analysis = vector_analysis.sort_values('mean', ascending=False)
+        plt.bar(
+            vector_analysis['vector_id'].astype(str),
+            vector_analysis['mean'],
+            alpha=0.7,
+            color='lightgreen'
+        )
+        plt.title("Tiempo Promedio de Atención por Vector", fontsize=14)
+        plt.ylabel("Tiempo Promedio de Atención (segundos)", fontsize=12)
+        plt.xlabel("ID del Vector", fontsize=12)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+    else:
+        plt.text(0.5, 0.5, "No hay datos de vector disponibles", ha='center', va='center', fontsize=14)
+        plt.axis('off')
     
-    # Return results
-    return {
+    plt.tight_layout()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    plot_filename = f"{output_dir}/police_id_{police_id}_analysis_{timestamp}.png"
+    plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # Construct the image URL
+    image_url = f"/static/analysis/police_all_incidents/{Path(plot_filename).name}"
+    
+    # Prepare the response
+    response = {
         "police_id": police_id,
-        "summary_statistics": summary_stats,
-        "status_distribution": {str(k): v for k, v in status_counts.items()},
-        "zone_analysis": zone_stats,
-        "incidents": df.fillna("null").to_dict(orient='records')
+        "summary_statistics": {
+            "total_incidents": len(df),
+            "average_attention_time_seconds": avg_attention_time_seconds,
+            "median_attention_time_seconds": median_attention_time_seconds
+        },
+        "image_url": image_url
     }
+    
+    return JSONResponse(content=response)
