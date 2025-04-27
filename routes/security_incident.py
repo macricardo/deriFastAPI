@@ -13,6 +13,7 @@ import os
 from fastapi.responses import JSONResponse
 from pathlib import Path
 import matplotlib.pyplot as plt
+from fastapi.responses import FileResponse
 
 # Create a session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -102,6 +103,7 @@ def analyze_police_incidents(
         - attention time average
         - incident details
         - URL to the generated image
+        - The generated image directly in the browser
     """
     # Query all incidents for this police officer (NO LIMIT for analysis)
     incidents = db.query(SecurityIncident)\
@@ -225,4 +227,4 @@ def analyze_police_incidents(
         "image_url": image_url
     }
     
-    return JSONResponse(content=response)
+    return FileResponse(plot_filename, media_type="image/png")
