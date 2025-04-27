@@ -14,3 +14,4 @@ fastapi-env/
 .github/copilot-instructions.md
 outputs/
 analysis/outputs/
+analysis/police_all_incidents
