@@ -15,3 +15,4 @@ fastapi-env/
 outputs/
 analysis/outputs/
 analysis/police_all_incidents
+analysis/incident_all_states

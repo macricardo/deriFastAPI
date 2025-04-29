@@ -6,12 +6,11 @@ import os
 from typing import Dict, Any
 import sys
 from pathlib import Path
+from settings import settings  # Import settings
 
 # Add the project root to sys.path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(project_root))
-
-from settings import settings  # Import settings
 
 BASE_URL = settings.API_URL   # URL de la API.
 
