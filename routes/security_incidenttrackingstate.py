@@ -67,8 +67,9 @@ def analyze_incident_tracking_states(incident_id: int, db: Session = Depends(get
     if df.empty:
         raise HTTPException(status_code=400, detail="No valid data available for analysis.")
 
-    # Convert created_at to datetime and sort
-    df['created_at'] = pd.to_datetime(df['created_at'])
+    # Convert created_at to datetime and normalize timezone
+    df['created_at'] = pd.to_datetime(df['created_at'], utc=True)  # Ensure all timestamps are UTC
+    df['created_at'] = df['created_at'].dt.tz_localize(None)  # Remove timezone information
     df = df.sort_values(by='created_at')
 
     # Calculate time spent in each status
@@ -189,8 +190,9 @@ def analyze_incident_tracking_states(incident_id: int, db: Session = Depends(get
     if df.empty:
         raise HTTPException(status_code=400, detail="No valid data available for analysis after filtering excluded statuses.")
 
-    # Convert created_at to datetime and sort
-    df['created_at'] = pd.to_datetime(df['created_at'])
+    # Convert created_at to datetime and normalize timezone
+    df['created_at'] = pd.to_datetime(df['created_at'], utc=True)  # Ensure all timestamps are UTC
+    df['created_at'] = df['created_at'].dt.tz_localize(None)  # Remove timezone information
     df = df.sort_values(by='created_at')
 
     # Calculate time spent in each status
