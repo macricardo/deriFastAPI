@@ -5,6 +5,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
+"""
+Servicio de Análisis de Datos en FastAPI para DERI.
+
+Autor: Ricardo Hernández Ramón <ricardohernandez@garage.one>
+"""
+
 # Load environment variables
 env_path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)

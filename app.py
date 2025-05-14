@@ -8,6 +8,12 @@ from routes.security_incidenttrackingstate import router as incident_tracking_ro
 from routes.security_statusincident import router as status_incident_router
 import orjson
 
+"""
+Servicio de Análisis de Datos en FastAPI para DERI.
+
+Autor: Ricardo Hernández Ramón <ricardohernandez@garage.one>
+"""
+
 class PrettyORJSONResponse(ORJSONResponse):
     def render(self, content: any) -> bytes:
         return orjson.dumps(content, option=orjson.OPT_INDENT_2)

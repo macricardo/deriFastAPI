@@ -1,3 +1,8 @@
+## Autor
+Ricardo Hernandez Ramon
+GitHub: [@macricardo](https://github.com/macricardo)  
+Email: ricardohernandez@garage.one
+
 # Proyecto FastAPI
 
 Este es un proyecto estándar de FastAPI que utiliza PostgreSQL como base de datos. Los modelos, esquemas, rutas y el archivo app.py tienen sus funcionalidades básicas implementadas para manejar la lógica de la API.
